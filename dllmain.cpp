@@ -80,14 +80,13 @@ void PerformUFunctionHooks()
 		// !! Legacy comment (Change view point while spectating)
 		{.name_ = "Function TrPlayerController.RovingSpectate.ViewAPlayer", .hook_function_ = TrPlayerControllerRovingSpectateViewAPlayer, .hook_type_ = FunctionHookType::kPre, .hook_absorb_ = FunctionHookAbsorb::kAbsorb},
 
-		// NOTE: Currently replaced by the TrPlayerController PlayerTick hook
 		// Initial setup of input bindings for spectator tools
-		// {.name_ = "Function TribesGame.TrPlayerController.InitInputSystem", .hook_function_ = TrPlayerControllerInitInputSystem, .hook_type_ = FunctionHookType::kPre, .hook_absorb_ = FunctionHookAbsorb::kAbsorb},
+		// This may be neccessary for certain spectator bindings (eg. zoom) to work after initialisation
+		{.name_ = "Function TribesGame.TrPlayerController.InitInputSystem", .hook_function_ = TrPlayerControllerInitInputSystem, .hook_type_ = FunctionHookType::kPre, .hook_absorb_ = FunctionHookAbsorb::kAbsorb},
 
 		// TODO: Find a better way to do this...
 		// Setup of input bindings for spectator tools every demo rec controller tick
 		{.name_ = "Function TribesGame.TrPlayerController.PlayerTick", .hook_function_ = TrPlayerControllerPlayerTick, .hook_type_ = FunctionHookType::kPost},
-
 	};
 
 	for (const auto &ufunction_hook_information : processinternal_hooks_informations)
@@ -109,7 +108,7 @@ void OnDLLProcessAttach()
 
 #if defined(_DEBUG)
 	static plog::RollingFileAppender<plog::TxtFormatter> file_appender(LOG_FILE_NAME);
-	plog::init(plog::verbose, &file_appender);
+	plog::init(plog::info, &file_appender);
 #else
 	static plog::RollingFileAppender<plog::TxtFormatter> file_appender(LOG_FILE_NAME);
 	plog::init(plog::info, &file_appender);
