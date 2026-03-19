@@ -17,7 +17,6 @@
 
 #include <uhook.hpp>
 #include "processinternal_hooks.hpp"
-#include "native_hooks.hpp"
 
 #define HOOK_CALLFUNCTION
 #define LOG_FILE_NAME "ClientDemoPlayback.txt"
@@ -71,16 +70,9 @@ void ValidateUFunctionHookResult(const HookResult &hook_result, const std::strin
 void PerformUFunctionHooks()
 {
 	std::vector<UFunctionHooks<ProcessInternalPrototype>::UFunctionHookInformation> processinternal_hooks_informations{
-		// Begin demo recording on match start
-		// {.name_ = "Function UTGame.MatchInProgress.BeginState", .hook_function_ = UTGameMatchInProgressBeginState, .hook_type_ = FunctionHookType::kPost},
-
 		// Prevent crashes during demo recording (legacy)
 		{.name_ = "Function Engine.Actor.SetInitialState", .hook_function_ = ActorSetInitialState, .hook_type_ = FunctionHookType::kPre, .hook_absorb_ = FunctionHookAbsorb::kAbsorb},
 		{.name_ = "Function TribesGame.TrPlayerController.ReceiveLocalizedMessage", .hook_function_ = TrPlayerControllerReceiveLocalizedMessage, .hook_type_ = FunctionHookType::kPre, .hook_absorb_ = FunctionHookAbsorb::kAbsorb},
-		// {.name_ = "Function TribesGame.TrPlayerController.ClientShowAccoladeText", .hook_function_ = TrPlayerControllerClientShowAccoladeText, .hook_type_ = FunctionHookType::kPre, .hook_absorb_ = FunctionHookAbsorb::kAbsorb},
-
-		// !! Legacy comment (Set HUD bindings and ROLE)
-		// {.name_ = "Function TribesGame.TrPlayerController.ClientSetHUD", .hook_function_ = TrPlayerControllerClientSetHUD, .hook_type_ = FunctionHookType::kPre, .hook_absorb_ = FunctionHookAbsorb::kAbsorb},
 
 		// !! Legacy comment (Create a HUD for the DemoRecSpectator)
 		{.name_ = "Function TrPlayerController.RovingSpectate.BeginState", .hook_function_ = TrPlayerControllerRovingSpectateBeginState, .hook_type_ = FunctionHookType::kPre},
@@ -91,9 +83,6 @@ void PerformUFunctionHooks()
 		// NOTE: Currently replaced by the TrPlayerController PlayerTick hook
 		// Initial setup of input bindings for spectator tools
 		// {.name_ = "Function TribesGame.TrPlayerController.InitInputSystem", .hook_function_ = TrPlayerControllerInitInputSystem, .hook_type_ = FunctionHookType::kPre, .hook_absorb_ = FunctionHookAbsorb::kAbsorb},
-
-		// Every tick (frame?)... manually sets the input binds...
-		// {.name_ = "Function TribesGame.TrGameReplicationInfo.Tick", .hook_function_ = TrGameReplicationInfoTick, .hook_type_ = FunctionHookType::kPost},
 
 		// TODO: Find a better way to do this...
 		// Setup of input bindings for spectator tools every demo rec controller tick
@@ -146,14 +135,6 @@ void OnDLLProcessAttach()
 #if defined(_DEBUG) && defined(HOOK_CALLFUNCTION)
 	DetourAttach(&(PVOID &)original_callfunction, CallFunctionHook);
 #endif
-
-	// TODO: Delete native hooks
-	//  // Hook native functions
-
-	// // Obtain UGameEngine object which we use to inject the demo recording command
-	// DetourAttach(&(PVOID &)original_game_engine_tick, GameEngineTickHook);
-	// // Prevent crash/memory leak when adding elements not allocated by the engine to DeferredCommands array
-	// DetourAttach(&(PVOID &)original_fmalloc_free, FMallocFreeHook);
 
 	// Make sure all detours attaches are placed BEFORE this call
 	// Make sure UFunctionHooks objects are created AFTER this call

@@ -2,17 +2,9 @@
 
 #include <uhook.hpp>
 
-PROCESSINTERNAL_HOOK(UTGameMatchInProgressBeginState);
 PROCESSINTERNAL_HOOK(ActorSetInitialState);
 PROCESSINTERNAL_HOOK(TrPlayerControllerReceiveLocalizedMessage);
-PROCESSINTERNAL_HOOK(TrPlayerControllerClientShowAccoladeText);
-PROCESSINTERNAL_HOOK(TrPlayerControllerClientSetHUD);
-PROCESSINTERNAL_HOOK(TrPawnClientUpdateHUDHealth);
-PROCESSINTERNAL_HOOK(WeaponClientGivenTo);
-PROCESSINTERNAL_HOOK(TrDevice_AutoFireSwitchToPostFireDevice);
 PROCESSINTERNAL_HOOK(TrPlayerControllerRovingSpectateBeginState);
 PROCESSINTERNAL_HOOK(TrPlayerControllerRovingSpectateViewAPlayer);
 PROCESSINTERNAL_HOOK(TrPlayerControllerInitInputSystem);
-
-PROCESSINTERNAL_HOOK(TrGameReplicationInfoTick);
 PROCESSINTERNAL_HOOK(TrPlayerControllerPlayerTick);
