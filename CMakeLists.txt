@@ -27,6 +27,7 @@ target_sources(${PROJECT_NAME} PRIVATE
     dllmain.cpp
     helper.cpp
     processinternal_hooks.cpp
+    # TODO: Delete native hooks
     native_hooks.cpp
     Unreal-UFunction-Hook/uhook.cpp
     

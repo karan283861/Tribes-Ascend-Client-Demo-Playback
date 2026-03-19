@@ -9,16 +9,6 @@
 #include "helper.hpp"
 #include "processinternal_hooks.hpp"
 
-PROCESSINTERNAL_HOOK(UTGameMatchInProgressBeginState)
-{
-	auto now{std::chrono::system_clock::now()};
-	auto date_string{std::format("{:%d-%m-%Y_%H-%M}", now)};
-	auto date_string_wide{std::wstring(date_string.begin(), date_string.end())};
-	std::wstring current_map_name{g_game_engine->GetCurrentWorldInfo()->GetURLMap().Data};
-	g_demo_command = std::wstring(L"demorec ").append(date_string_wide).append(L"_").append(current_map_name);
-	g_game_engine->DeferredCommands.Add(FString(const_cast<wchar_t *>(g_demo_command.c_str())));
-}
-
 PROCESSINTERNAL_HOOK(ActorSetInitialState)
 {
 	if (calling_uobject->Class == kDemoRecControllerClass)
@@ -59,33 +49,94 @@ PROCESSINTERNAL_HOOK(TrPawnClientUpdateHUDHealth)
 {
 }
 
-PROCESSINTERNAL_HOOK(WeaponClientGivenTo)
+PROCESSINTERNAL_HOOK(TrPlayerControllerRovingSpectateBeginState)
 {
-	static auto lock{false};
-	if (lock)
+	if (calling_uobject->Class == kDemoRecControllerClass)
 	{
-		return;
+		auto demo_rec_controller{reinterpret_cast<DemoRecController *>(calling_uobject)};
+		if (!demo_rec_controller->myHUD)
+		{
+			demo_rec_controller->myHUD = reinterpret_cast<AHUD *>(demo_rec_controller->Spawn(ATrHUDTeam::StaticClass(),
+																							 demo_rec_controller,
+																							 FName(),
+																							 demo_rec_controller->Location,
+																							 demo_rec_controller->Rotation,
+																							 nullptr,
+																							 true));
+		}
 	}
-	auto weapon{reinterpret_cast<AWeapon *>(calling_uobject)};
-	if (weapon->Instigator)
-	{
-		lock = true;
-		// This will call ProcessEvent -> ProcessInternal and come back to this function, so we lock before calling it
-		weapon->ClientGivenTo(weapon->Instigator, false);
-	}
-	lock = false;
 }
 
-PROCESSINTERNAL_HOOK(TrDevice_AutoFireSwitchToPostFireDevice)
+PROCESSINTERNAL_HOOK(TrPlayerControllerRovingSpectateViewAPlayer)
 {
-	// Not sure how much of the code below is actually needed for the functionality
-	auto device{reinterpret_cast<ATrDevice_AutoFire *>(calling_uobject)};
-	auto inventory_manager{reinterpret_cast<ATrInventoryManager *>(device->InvManager)};
-	auto instigator{reinterpret_cast<Player *>(inventory_manager->Instigator)};
-	device->ClientWeaponThrown();
-	if (device->m_PostFireDevice)
+	if (calling_uobject->Class == kDemoRecControllerClass)
 	{
-		device->m_PostFireDevice->ClientGivenTo(instigator, false);
-		device->m_PostFireDevice->ClientWeaponSet(true, false);
+		auto demo_rec_controller{reinterpret_cast<DemoRecController *>(calling_uobject)};
+		demo_rec_controller->DemoViewNextPlayer();
+	}
+	original_processinternal(calling_uobject, unused, stack, result);
+}
+
+DemoRecController *drc{};
+
+PROCESSINTERNAL_HOOK(TrPlayerControllerInitInputSystem)
+{
+	original_processinternal(calling_uobject, unused, stack, result);
+	if (calling_uobject->Class == kDemoRecControllerClass)
+	{
+		auto demo_rec_controller{reinterpret_cast<DemoRecController *>(calling_uobject)};
+		if (demo_rec_controller->PlayerInput)
+		{
+			demo_rec_controller->PlayerInput->Bindings.Data = demo_rec_controller->GetSpectatorSettings()->Bindings.Data;
+			demo_rec_controller->PlayerInput->Bindings.Count = demo_rec_controller->GetSpectatorSettings()->Bindings.Count;
+			demo_rec_controller->PlayerInput->Bindings.Max = demo_rec_controller->GetSpectatorSettings()->Bindings.Max;
+			// !! Legacy comment (Prevent RPCs recursive crash)
+			// Not actually sure if this is needed
+			demo_rec_controller->Role = ROLE_MAX;
+
+			drc = demo_rec_controller;
+		}
+	}
+}
+
+PROCESSINTERNAL_HOOK(TrGameReplicationInfoTick)
+{
+	return;
+	if (drc && drc->PlayerInput)
+	{
+		static auto init{false};
+		if (init && drc->PlayerInput->Bindings.Data != drc->GetSpectatorSettings()->Bindings.Data)
+		{
+			PLOG_ERROR << "FART!";
+			*((int *)NULL) = 44;
+		}
+		drc->PlayerInput->Bindings.Data = drc->GetSpectatorSettings()->Bindings.Data;
+		drc->PlayerInput->Bindings.Count = drc->GetSpectatorSettings()->Bindings.Count;
+		drc->PlayerInput->Bindings.Max = drc->GetSpectatorSettings()->Bindings.Max;
+		// !! Legacy comment (Prevent RPCs recursive crash)
+		// Not actually sure if this is needed
+		drc->Role = ROLE_MAX;
+		init = true;
+	}
+}
+
+PROCESSINTERNAL_HOOK(TrPlayerControllerGameEngineSettings)
+{
+}
+
+PROCESSINTERNAL_HOOK(TrPlayerControllerPlayerTick)
+{
+	if (calling_uobject->Class == kDemoRecControllerClass)
+	{
+		auto demo_rec_controller{reinterpret_cast<DemoRecController *>(calling_uobject)};
+		if (demo_rec_controller->PlayerInput)
+		{
+			demo_rec_controller->PlayerInput->Bindings.Data = demo_rec_controller->GetSpectatorSettings()->Bindings.Data;
+			demo_rec_controller->PlayerInput->Bindings.Count = demo_rec_controller->GetSpectatorSettings()->Bindings.Count;
+			demo_rec_controller->PlayerInput->Bindings.Max = demo_rec_controller->GetSpectatorSettings()->Bindings.Max;
+			// !! Legacy comment (Prevent RPCs recursive crash)
+			// Needed - zooming in/out crashes if we don't do this
+			demo_rec_controller->Role = ROLE_MAX;
+		}
 	}
 }

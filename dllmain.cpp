@@ -20,7 +20,7 @@
 #include "native_hooks.hpp"
 
 #define HOOK_CALLFUNCTION
-#define LOG_FILE_NAME "ServerDemoRecording.txt"
+#define LOG_FILE_NAME "ClientDemoPlayback.txt"
 
 constexpr size_t kProcessEventAddress{0x00456F90};
 constexpr size_t kProcessInternalAddress{0x00459040};
@@ -72,22 +72,34 @@ void PerformUFunctionHooks()
 {
 	std::vector<UFunctionHooks<ProcessInternalPrototype>::UFunctionHookInformation> processinternal_hooks_informations{
 		// Begin demo recording on match start
-		{.name_ = "Function UTGame.MatchInProgress.BeginState", .hook_function_ = UTGameMatchInProgressBeginState, .hook_type_ = FunctionHookType::kPost},
+		// {.name_ = "Function UTGame.MatchInProgress.BeginState", .hook_function_ = UTGameMatchInProgressBeginState, .hook_type_ = FunctionHookType::kPost},
 
 		// Prevent crashes during demo recording (legacy)
 		{.name_ = "Function Engine.Actor.SetInitialState", .hook_function_ = ActorSetInitialState, .hook_type_ = FunctionHookType::kPre, .hook_absorb_ = FunctionHookAbsorb::kAbsorb},
 		{.name_ = "Function TribesGame.TrPlayerController.ReceiveLocalizedMessage", .hook_function_ = TrPlayerControllerReceiveLocalizedMessage, .hook_type_ = FunctionHookType::kPre, .hook_absorb_ = FunctionHookAbsorb::kAbsorb},
-		{.name_ = "Function TribesGame.TrPlayerController.ClientShowAccoladeText", .hook_function_ = TrPlayerControllerClientShowAccoladeText, .hook_type_ = FunctionHookType::kPre, .hook_absorb_ = FunctionHookAbsorb::kAbsorb},
-		{.name_ = "Function TribesGame.TrPlayerController.ClientSetHUD", .hook_function_ = TrPlayerControllerClientSetHUD, .hook_type_ = FunctionHookType::kPre, .hook_absorb_ = FunctionHookAbsorb::kAbsorb},
+		// {.name_ = "Function TribesGame.TrPlayerController.ClientShowAccoladeText", .hook_function_ = TrPlayerControllerClientShowAccoladeText, .hook_type_ = FunctionHookType::kPre, .hook_absorb_ = FunctionHookAbsorb::kAbsorb},
 
-		// !! Legacy comment (Allow players to spawn in and have non zero health/no zero max health)
-		{.name_ = "Function TribesGame.TrPawn.ClientUpdateHUDHealth", .hook_function_ = TrPawnClientUpdateHUDHealth, .hook_type_ = FunctionHookType::kPre, .hook_absorb_ = FunctionHookAbsorb::kAbsorb},
+		// !! Legacy comment (Set HUD bindings and ROLE)
+		// {.name_ = "Function TribesGame.TrPlayerController.ClientSetHUD", .hook_function_ = TrPlayerControllerClientSetHUD, .hook_type_ = FunctionHookType::kPre, .hook_absorb_ = FunctionHookAbsorb::kAbsorb},
 
-		// Allow players to spawn with loadout equipped
-		{.name_ = "Function Engine.Weapon.ClientGivenTo", .hook_function_ = WeaponClientGivenTo, .hook_type_ = FunctionHookType::kPre, .hook_absorb_ = FunctionHookAbsorb::kAbsorb},
+		// !! Legacy comment (Create a HUD for the DemoRecSpectator)
+		{.name_ = "Function TrPlayerController.RovingSpectate.BeginState", .hook_function_ = TrPlayerControllerRovingSpectateBeginState, .hook_type_ = FunctionHookType::kPre},
 
-		// Fix issue with grenades (and melee) auto firing and not returning to previous weapon after exuasting emmo
-		{.name_ = "Function TribesGame.TrDevice_AutoFire.SwitchToPostFireDevice", .hook_function_ = TrDevice_AutoFireSwitchToPostFireDevice, .hook_type_ = FunctionHookType::kPre, .hook_absorb_ = FunctionHookAbsorb::kAbsorb}};
+		// !! Legacy comment (Change view point while spectating)
+		{.name_ = "Function TrPlayerController.RovingSpectate.ViewAPlayer", .hook_function_ = TrPlayerControllerRovingSpectateViewAPlayer, .hook_type_ = FunctionHookType::kPre, .hook_absorb_ = FunctionHookAbsorb::kAbsorb},
+
+		// NOTE: Currently replaced by the TrPlayerController PlayerTick hook
+		// Initial setup of input bindings for spectator tools
+		// {.name_ = "Function TribesGame.TrPlayerController.InitInputSystem", .hook_function_ = TrPlayerControllerInitInputSystem, .hook_type_ = FunctionHookType::kPre, .hook_absorb_ = FunctionHookAbsorb::kAbsorb},
+
+		// Every tick (frame?)... manually sets the input binds...
+		// {.name_ = "Function TribesGame.TrGameReplicationInfo.Tick", .hook_function_ = TrGameReplicationInfoTick, .hook_type_ = FunctionHookType::kPost},
+
+		// TODO: Find a better way to do this...
+		// Setup of input bindings for spectator tools every demo rec controller tick
+		{.name_ = "Function TribesGame.TrPlayerController.PlayerTick", .hook_function_ = TrPlayerControllerPlayerTick, .hook_type_ = FunctionHookType::kPost},
+
+	};
 
 	for (const auto &ufunction_hook_information : processinternal_hooks_informations)
 	{
@@ -108,7 +120,7 @@ void OnDLLProcessAttach()
 
 #if defined(_DEBUG)
 	static plog::RollingFileAppender<plog::TxtFormatter> file_appender(LOG_FILE_NAME);
-	plog::init(plog::info, &file_appender);
+	plog::init(plog::verbose, &file_appender);
 #else
 	static plog::RollingFileAppender<plog::TxtFormatter> file_appender(LOG_FILE_NAME);
 	plog::init(plog::info, &file_appender);
@@ -135,12 +147,13 @@ void OnDLLProcessAttach()
 	DetourAttach(&(PVOID &)original_callfunction, CallFunctionHook);
 #endif
 
-	// Hook native functions
+	// TODO: Delete native hooks
+	//  // Hook native functions
 
-	// Obtain UGameEngine object which we use to inject the demo recording command
-	DetourAttach(&(PVOID &)original_game_engine_tick, GameEngineTickHook);
-	// Prevent crash/memory leak when adding elements not allocated by the engine to DeferredCommands array
-	DetourAttach(&(PVOID &)original_fmalloc_free, FMallocFreeHook);
+	// // Obtain UGameEngine object which we use to inject the demo recording command
+	// DetourAttach(&(PVOID &)original_game_engine_tick, GameEngineTickHook);
+	// // Prevent crash/memory leak when adding elements not allocated by the engine to DeferredCommands array
+	// DetourAttach(&(PVOID &)original_fmalloc_free, FMallocFreeHook);
 
 	// Make sure all detours attaches are placed BEFORE this call
 	// Make sure UFunctionHooks objects are created AFTER this call
