@@ -2,9 +2,11 @@
 
 #include <uhook.hpp>
 
-PROCESSINTERNAL_HOOK(ActorSetInitialState);
-PROCESSINTERNAL_HOOK(TrPlayerControllerReceiveLocalizedMessage);
-PROCESSINTERNAL_HOOK(TrPlayerControllerRovingSpectateBeginState);
-PROCESSINTERNAL_HOOK(TrPlayerControllerRovingSpectateViewAPlayer);
-PROCESSINTERNAL_HOOK(TrPlayerControllerInitInputSystem);
-PROCESSINTERNAL_HOOK(TrPlayerControllerPlayerTick);
+using namespace UE3;
+
+UE3_PROCESSINTERNAL_HOOK(ActorSetInitialState);
+UE3_PROCESSINTERNAL_HOOK(TrPlayerControllerReceiveLocalizedMessage);
+UE3_PROCESSINTERNAL_HOOK(TrPlayerControllerRovingSpectateBeginState);
+UE3_PROCESSINTERNAL_HOOK(TrPlayerControllerRovingSpectateViewAPlayer);
+UE3_PROCESSINTERNAL_HOOK(TrPlayerControllerInitInputSystem);
+UE3_PROCESSINTERNAL_HOOK(TrPlayerControllerPlayerTick);

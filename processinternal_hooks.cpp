@@ -9,27 +9,30 @@
 #include "helper.hpp"
 #include "processinternal_hooks.hpp"
 
-PROCESSINTERNAL_HOOK(ActorSetInitialState)
+UE3_PROCESSINTERNAL_HOOK(ActorSetInitialState)
 {
-	if (calling_uobject->Class == kDemoRecControllerClass)
+	auto controller{reinterpret_cast<AController *>(calling_uobject)};
+	if (controller->Class == kDemoRecControllerClass)
 	{
 		return;
 	}
 	original_processinternal(calling_uobject, unused, stack, result);
 }
 
-PROCESSINTERNAL_HOOK(TrPlayerControllerReceiveLocalizedMessage)
+UE3_PROCESSINTERNAL_HOOK(TrPlayerControllerReceiveLocalizedMessage)
 {
-	if (calling_uobject->Class == kDemoRecControllerClass)
+	auto controller{reinterpret_cast<AController *>(calling_uobject)};
+	if (controller->Class == kDemoRecControllerClass)
 	{
 		return;
 	}
 	original_processinternal(calling_uobject, unused, stack, result);
 }
 
-PROCESSINTERNAL_HOOK(TrPlayerControllerRovingSpectateBeginState)
+UE3_PROCESSINTERNAL_HOOK(TrPlayerControllerRovingSpectateBeginState)
 {
-	if (calling_uobject->Class == kDemoRecControllerClass)
+	auto controller{reinterpret_cast<AController *>(calling_uobject)};
+	if (controller->Class == kDemoRecControllerClass)
 	{
 		auto demo_rec_controller{reinterpret_cast<DemoRecController *>(calling_uobject)};
 		if (!demo_rec_controller->myHUD)
@@ -45,9 +48,10 @@ PROCESSINTERNAL_HOOK(TrPlayerControllerRovingSpectateBeginState)
 	}
 }
 
-PROCESSINTERNAL_HOOK(TrPlayerControllerRovingSpectateViewAPlayer)
+UE3_PROCESSINTERNAL_HOOK(TrPlayerControllerRovingSpectateViewAPlayer)
 {
-	if (calling_uobject->Class == kDemoRecControllerClass)
+	auto controller{reinterpret_cast<AController *>(calling_uobject)};
+	if (controller->Class == kDemoRecControllerClass)
 	{
 		auto demo_rec_controller{reinterpret_cast<DemoRecController *>(calling_uobject)};
 		demo_rec_controller->DemoViewNextPlayer();
@@ -55,10 +59,11 @@ PROCESSINTERNAL_HOOK(TrPlayerControllerRovingSpectateViewAPlayer)
 	original_processinternal(calling_uobject, unused, stack, result);
 }
 
-PROCESSINTERNAL_HOOK(TrPlayerControllerInitInputSystem)
+UE3_PROCESSINTERNAL_HOOK(TrPlayerControllerInitInputSystem)
 {
 	original_processinternal(calling_uobject, unused, stack, result);
-	if (calling_uobject->Class == kDemoRecControllerClass)
+	auto controller{reinterpret_cast<AController *>(calling_uobject)};
+	if (controller->Class == kDemoRecControllerClass)
 	{
 		auto demo_rec_controller{reinterpret_cast<DemoRecController *>(calling_uobject)};
 		if (demo_rec_controller->PlayerInput)
@@ -73,9 +78,10 @@ PROCESSINTERNAL_HOOK(TrPlayerControllerInitInputSystem)
 	}
 }
 
-PROCESSINTERNAL_HOOK(TrPlayerControllerPlayerTick)
+UE3_PROCESSINTERNAL_HOOK(TrPlayerControllerPlayerTick)
 {
-	if (calling_uobject->Class == kDemoRecControllerClass)
+	auto controller{reinterpret_cast<AController *>(calling_uobject)};
+	if (controller->Class == kDemoRecControllerClass)
 	{
 		auto demo_rec_controller{reinterpret_cast<DemoRecController *>(calling_uobject)};
 		if (demo_rec_controller->PlayerInput)
